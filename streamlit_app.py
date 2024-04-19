@@ -1,40 +1,30 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
-"""
-# Welcome to Streamlit!
+# Load the tokenizer and the model
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Meta-Llama-3-8B")
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Set the title of the web app
+st.title('Tamil Knowledge Center')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+# Text box for user input
+user_input = st.text_input("Ask me anything in Tamil:")
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+def get_response(text):
+    # Encode the user input and add the necessary tokens
+    inputs = tokenizer.encode(text + tokenizer.eos_token, return_tensors="pt")
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+    # Generate a response
+    output = model.generate(inputs, max_length=512, num_return_sequences=1)
+    response = tokenizer.decode(output[0], skip_special_tokens=True)
+    return response
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+# Handling user interaction
+if user_input:
+    response = get_response(user_input)
+    st.write(response)
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
-
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+# Run the Streamlit app (this command is only necessary when running the script manually, not needed in the script itself)
+# st.run()
